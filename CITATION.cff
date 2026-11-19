@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "HS-MP: Homogeneous Structured Multi-Path P2P video streaming simulation testbed"
+type: software
+version: 1.0.0
+date-released: 2026-11-19
+license: MIT
+authors:
+  - family-names: "Xavier"
+    given-names: "J. Lourdu"
+  - family-names: "Banuchitra"
+    given-names: "S."
+  - family-names: "Sivakami"
+    given-names: "M."
+  - family-names: "Sharon"
+    given-names: "C. Jairaj"
+  - family-names: "Sri"
+    given-names: "M. Jothi Keerthana"
+  - family-names: "Murugaiyan"
+    given-names: "Karthick"
+abstract: "Simulation testbed and analysis scripts for comparing FIFO/throughput-ABR heuristics with LSTM caching and Q-learning ABR in P2P video streaming."
+keywords: [peer-to-peer, video streaming, adaptive bitrate, Q-learning, LSTM caching]

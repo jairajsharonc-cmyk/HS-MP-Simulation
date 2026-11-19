@@ -1,0 +1,5 @@
+Configuration,Code,Latency (ms),Energy (J),Availability Rate,Stall (s),Switch Rate,Cache Hit Rate
+Heuristic Caching + Heuristic ABR,HH,11.33 ± 0.73,0.0239 ± 0.0000,1.0000 ± 0.0000,0.0000 ± 0.0000,0.0040 ± 0.0000,0.1432 ± 0.0675
+Heuristic Caching + Q-learning ABR,HQ,10.60 ± 0.69,0.0158 ± 0.0024,1.0000 ± 0.0000,0.0000 ± 0.0000,0.2336 ± 0.0309,0.1412 ± 0.0663
+ML Caching + Heuristic ABR,MH,11.33 ± 0.76,0.0239 ± 0.0000,1.0000 ± 0.0000,0.0000 ± 0.0000,0.0040 ± 0.0000,0.1444 ± 0.0695
+ML Caching + Q-learning ABR (Full Model),MQ,10.60 ± 0.68,0.0158 ± 0.0024,1.0000 ± 0.0000,0.0000 ± 0.0000,0.2356 ± 0.0291,0.1388 ± 0.0649
