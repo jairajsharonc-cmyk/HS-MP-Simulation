@@ -65,19 +65,19 @@ class Config:
     e_tx_per_byte: float = 5.0e-9      # [PAPER]
     e_rx_per_byte: float = 3.0e-9      # [PAPER]
     e_hop: float = 2.0e-6              # [PAPER]
-    local_energy_discount: bool = False  # [ASSUMED] False: Eq.(1) applied uniformly (matches Table 2's
-                                       #   0.0239 J ~ one 1080p chunk). True: local hits cost only
-                                       #   e_local_per_byte, as the Sec. 3.3.4 prose suggests.
-    e_local_per_byte: float = 1.0e-10  # only used if local_energy_discount=True
+    local_energy_discount: bool = True   # [PAPER] Sec 3.3.4 "Impact of Caching": a local-cache fetch costs
+                                       #   "very little energy (only local processing)"; remote fetches
+                                       #   follow Eq.(1).
+    e_local_per_byte: float = 1.0e-10  # [ASSUMED] local processing cost (value not given in the paper)
 
     # ---------------- Simulation loop (Alg. 1) ---------------------------------
-    total_steps: int = 250             # [PAPER] Alg.1 (Sec 5.2 text says 300: inconsistency)
+    total_steps: int = 300             # [PAPER] Sec 5.2 / time-series plots (Alg.1 lists 250 as an "e.g.")
     train_every: int = 10              # [PAPER] Alg.1
     prefetch_every: int = 5            # [ASSUMED] "periodic" proactive caching
     n_prefetch_targets: int = 3        # [ASSUMED]
     top_k: int = 5                     # [PAPER] Sec 4.2.4
-    heuristic_prefetch: str = "frequency"   # [ASSUMED] Alg.1 2k says heuristic also "predicts top-k";
-                                       #   Sec 3.1 says FIFO is purely reactive -> use "none" for that.
+    heuristic_prefetch: str = "none"   # [PAPER] Sec 3.1 / 3.3.3: FIFO is purely reactive (caches only after a
+                                       #   request). "frequency" kept as an optional ablation.
 
     # ---------------- Q-learning ABR (Sec. 4.1) --------------------------------
     q_buffer_bins: int = 10            # [PAPER] 10 bins x 2 s
@@ -100,7 +100,8 @@ class Config:
     lstm_batch: int = 16               # [ASSUMED]
     lstm_epochs_per_train: int = 1     # [ASSUMED]
     lstm_backend: str = "numpy"        # "numpy" (tested, no dependencies) or "torch"
-    sample_predictions: bool = False   # [ASSUMED] False = deterministic top-k
+    sample_predictions: bool = True    # [PAPER] Sec 4.3: randomness enters via "prediction probabilities";
+                                       #   Sec 6 mentions the softmax temperature. False = deterministic top-k
     softmax_temperature: float = 1.0   # only used if sample_predictions=True
 
     # ---------------- Experiment design (Sec. 4.3, 5) ---------------------------

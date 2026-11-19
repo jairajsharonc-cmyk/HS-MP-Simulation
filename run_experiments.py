@@ -2,7 +2,7 @@
 """Run the full HS-MP experiment: 4 strategies x N seeds (Alg. 1 step 4).
 
 Usage:
-    python run_experiments.py                    # paper setting: 10 seeds, 250 steps
+    python run_experiments.py                    # manuscript setting: 10 seeds, 300 steps
     python run_experiments.py --seeds 3 --steps 100 --out results_quick     # smoke test
     python run_experiments.py --lstm-backend torch                          # use PyTorch LSTM
     python run_experiments.py --heuristic-prefetch none                     # purely reactive FIFO
@@ -19,16 +19,18 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--seeds", type=int, default=10)
     ap.add_argument("--first-seed", type=int, default=0)
-    ap.add_argument("--steps", type=int, default=250)
+    ap.add_argument("--steps", type=int, default=300)
     ap.add_argument("--out", default="results")
     ap.add_argument("--lstm-backend", default="numpy", choices=["numpy", "torch"])
-    ap.add_argument("--heuristic-prefetch", default="frequency", choices=["frequency", "none"])
-    ap.add_argument("--local-energy-discount", action="store_true")
+    ap.add_argument("--heuristic-prefetch", default="none", choices=["frequency", "none"])
+    ap.add_argument("--no-local-energy-discount", action="store_true")
+    ap.add_argument("--deterministic-lstm", action="store_true")
     a = ap.parse_args()
 
     cfg = Config(total_steps=a.steps, n_seeds=a.seeds, lstm_backend=a.lstm_backend,
                  heuristic_prefetch=a.heuristic_prefetch,
-                 local_energy_discount=a.local_energy_discount)
+                 local_energy_discount=not a.no_local_energy_discount,
+                 sample_predictions=not a.deterministic_lstm)
     os.makedirs(a.out, exist_ok=True)
     seeds = list(range(a.first_seed, a.first_seed + a.seeds))
 

@@ -23,21 +23,21 @@ python test_hsmp.py
 python run_experiments.py --seeds 3 --steps 100 --out results_quick
 python make_report.py --in results_quick
 
-# 3. FULL experiment as in the paper: 4 strategies x 10 seeds x 250 steps (~30-60 s on a laptop CPU)
+# 3. FULL experiment as in the paper: 4 strategies x 10 seeds x 300 steps (~30-60 s on a laptop CPU)
 python run_experiments.py --out results
 python make_report.py --in results
 
 # 4. Optional analyses
 python sensitivity_q.py            # effect of the unreported Q-learning alpha / gamma
 python diagnose_lstm.py            # why the LSTM adds nothing (prediction accuracy + prefetch ablation)
-python run_experiments.py --heuristic-prefetch none --out results_pureFIFO   # strictly reactive FIFO (Sec 3.1)
+python run_experiments.py --heuristic-prefetch frequency --out results_freq   # optional ablation: FIFO + frequency prefetch
 python run_experiments.py --lstm-backend torch --out results_torch           # needs: pip install torch
 ```
 
 ### What you get in `results/`
 | File | Corresponds to |
 |---|---|
-| `per_seed_summary.csv` | one row per (strategy, seed): all metrics averaged over the 250 steps |
+| `per_seed_summary.csv` | one row per (strategy, seed): all metrics averaged over the 300 steps |
 | `table2_performance.csv` | **Table 2** (mean ± 95 % CI half-width, t-distribution, n = 10) |
 | `table3_paired_ttests.csv` | **Table 3** (t, p, mean_diff, Cohen's d_z, significance) + supplementary Holm-adjusted p |
 | `fig2…fig5_timeseries_{HH,HQ,MH,MQ}.png` | **Figs 2–5** (seed 0 trace; change with `--ts-seed`) |
@@ -87,34 +87,31 @@ All are tagged `[ASSUMED]`, `[INFERRED]` or `[CALIBRATED]` in `hsmp/config.py`.
 | Proactive caching | every 5 steps, 3 nearest low-load peers, ≤ 2 replicas/chunk | "periodic", unspecified |
 
 ---------------------------------------------------------------------------------------------------
-## 4. Results of this implementation vs. your Table 2 (10 seeds, mean)
+## 4. Results of this implementation (spec-aligned version, 10 seeds x 300 steps)
 
-| | Latency ms (mine / paper) | Energy J | Switch rate | Cache hit |
+Defaults now follow the manuscript text: 300 steps (Sec 5.2); strictly reactive FIFO (Sec 3.1, 3.3.3);
+local-cache fetches cost only local processing (Sec 3.3.4); LSTM top-k drawn from its predicted
+probabilities (Sec 4.3 / Sec 6). Energy follows Eq. (1); Sec 5.1's power x time energy formula gives no
+power values and conflicts with Eq. (1), so it cannot be implemented.
+
+| | Latency ms | Energy J | Switch rate | Cache hit |
 |---|---|---|---|---|
-| H–H | 11.33 / 11.37 | 0.0239 / 0.0239 | 0.004 / 0.021 | 0.143 / 0.113 |
-| H–Q | 10.60 / 11.89 | 0.0158 / 0.0111 | 0.234 / 0.494 | 0.141 / 0.093 |
-| M–H | 11.33 / 11.97 | 0.0239 / 0.0238 | 0.004 / 0.024 | 0.144 / 0.105 |
-| M–Q | 10.60 / 12.28 | 0.0158 / 0.0119 | 0.236 / 0.470 | 0.139 / 0.087 |
+| H-H | 11.18 | 0.0219 | 0.0033 | 0.155 |
+| H-Q | 10.49 | 0.0147 | 0.225 | 0.147 |
+| M-H | 11.24 | 0.0219 | 0.0033 | 0.155 |
+| M-Q | 10.56 | 0.0147 | 0.221 | 0.147 |
 
-**Reproduced (direction & significance):** Q-learning significantly cuts energy (t ≈ 7.6, p < 0.001) and
-significantly raises switching (t ≈ −17); availability ≈ 1, stalls ≈ 0; H–H baseline latency/energy match.
+Findings (see `results/table2_performance.csv`, `table3_paired_ttests.csv`):
+- Q-learning cuts energy by about 33 % (p < 0.001), raises the quality-switch rate from 0.003 to about 0.22
+  (p < 0.001), and **lowers** latency by about 0.7 ms (p < 0.001) because it delivers smaller chunks.
+- LSTM caching vs FIFO: no significant difference in latency, energy or cache hit (all p > 0.3).
+- Availability is 1.0 and stalls are about 0 for every configuration (LSTM sampling adds a rare, tiny stall).
 
-**Not reproduced:** (i) magnitude of energy saving (−34 % vs −50 %) and switch rate (0.23 vs 0.49), not
-explained by α/γ; (ii) **latency increase under Q-learning** — here latency *falls* by 0.7 ms because smaller
-chunks transmit faster; (iii) **ML caching being worse than FIFO** — here no measurable difference.
+The LSTM does not learn useful request structure in this setting (online top-1 accuracy ~0; the rule
+"next chunk = current + 1" is right 98.6 % of the time), and its prefetching leaves the cache-hit rate unchanged.
+The Q-learning energy saving mostly reflects lower delivered quality (11.96 -> 7.9 Mbps, `table_supplementary.csv`).
+These outcomes were NOT tuned: the code follows the stated method and reports what it produces.
 
-**Two findings you should understand before submitting** (`diagnose_lstm.py`, `sensitivity_q.py`):
-1. *The LSTM learns nothing in this setting*: online top-1 accuracy 0.3 % (chance 0.02 %), while the rule
-   "next chunk = current + 1" is right 98.5 % of the time. Prefetch ablation: none 0.1436, frequency 0.1432,
-   LSTM 0.1444 cache hit. A chunk-ID-embedding LSTM cannot generalise across chunk IDs in a 250-step online run.
-2. *The Q-learning "energy saving" is mostly a quality sacrifice*: energy ∝ delivered bytes. Mean delivered
-   bitrate drops from 11.95 to ~7.9 Mbps. Without a QoE/bitrate metric, "saves 50 % energy" is not a like-for-like win.
-
-> **Important:** this is an independent re-implementation from the text. If your submitted Table 2/3 came from
-> your original code, keep reporting those numbers from that code; use this package as the released, documented
-> reference implementation, and state any differences openly.
-
----------------------------------------------------------------------------------------------------
 ## 5. Review notes on the manuscript (things a referee may catch)
 
 1. **Fig. 6 image ≠ Table 2.** The image shows latency 0.49–1.39 ms, cache hit 74–82 %, switch rate 0.27/0.74 —
